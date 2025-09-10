@@ -40,7 +40,7 @@ async def check_urls(
 
     warnings.simplefilter("ignore")
 
-    urls = await asyncio.gather(*tasks)
+    results = await asyncio.gather(*tasks)
 
     warnings.resetwarnings()
 
@@ -48,7 +48,16 @@ async def check_urls(
     # the event loop, do a 250ms sleep (not for each site)
     await asyncio.sleep(0.250)
 
-    return list(itertools.chain(*urls))  # flatten list of lists
+    # Separate bad links and statistics
+    all_bad = []
+    total_stats = {"remote_checked": 0, "remote_excluded": 0}
+
+    for bad_links, stats in results:
+        all_bad.extend(bad_links)
+        total_stats["remote_checked"] += stats["remote_checked"]
+        total_stats["remote_excluded"] += stats["remote_excluded"]
+
+    return all_bad, total_stats
 
 
 async def check_url(
@@ -64,6 +73,9 @@ async def check_url(
     urls = glob.findall(fn.read_text(errors="ignore"))
     logging.debug(fn, " ".join(urls))
     bad: list[tuple[Path, str, T.Any]] = []
+
+    # Track statistics for this file
+    stats = {"remote_checked": 0, "remote_excluded": 0}
 
     timeout = aiohttp.ClientTimeout(total=TIMEOUT)
 
@@ -98,4 +110,4 @@ async def check_url(
         else:
             logging.info(f"OK: {url:80s}")
 
-    return bad
+    return bad, stats
