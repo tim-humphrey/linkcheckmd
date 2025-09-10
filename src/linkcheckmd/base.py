@@ -8,9 +8,6 @@ import asyncio
 from .coro import check_urls
 from . import files
 
-# Global statistics tracking
-_stats = {"local_checked": 0, "remote_checked": 0, "remote_excluded": 0}
-
 # http://www.useragentstring.com
 USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:64.0) Gecko/20100101 Firefox/64.0"
 
@@ -39,9 +36,9 @@ def check_links(
         local_count += 1
 
     bad = None
-    remote_count = 0
+    remote_stats = {"remote_checked": 0, "remote_excluded": 0}
     if not local:
-        bad, remote_count = check_remotes(
+        bad, remote_stats = check_remotes(
             path,
             domain,
             ext=ext,
@@ -54,8 +51,8 @@ def check_links(
 
     stats = {
         "local_checked": local_count,
-        "remote_checked": remote_count,
-        "remote_excluded": 0,
+        "remote_checked": remote_stats["remote_checked"],
+        "remote_excluded": remote_stats["remote_excluded"],
     }
 
     return bad, stats
@@ -142,9 +139,4 @@ def check_remotes(
             path, regex=pat, ext=ext, hdr=hdr, recurse=recurse, ssl_verify=ssl_verify
         )
 
-    # Update global statistics
-    global _stats
-    _stats["remote_checked"] = remote_stats["remote_checked"]
-    _stats["remote_excluded"] = remote_stats["remote_excluded"]
-
-    return urls
+    return urls, remote_stats
