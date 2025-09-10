@@ -84,6 +84,31 @@ python -m linkcheckmd
 The `-v` `--verbose` options prints the URLs as they are checked.
 Observe that URLs from different markdown files are interleaved, showing the asynchronous nature of this program.
 
+## Report
+
+At the end of the link checking process, Linkchecker for Markdown provides a comprehensive ASCII summary report. This report includes statistics on the number of local and remote links checked, the number of remote links excluded, total links checked, elapsed time, and overall status.
+
+Example report output:
+
+```
+==================================================
+LINKCHECK SUMMARY REPORT
+==================================================
+Local links checked: 12
+Remote links checked: 45
+Remote links excluded: 8
+--------------------------------------------------
+Total links checked: 57
+--------------------------------------------------
+Time elapsed: 2.847s
+Status: SUCCESS
+All links are valid! ✓
+==================================================
+```
+
+This summary helps quickly assess the health of your Markdown links and is useful for continuous integration pipelines and regular documentation maintenance.
+
+
 ### Benchmark
 
 For benchmarking and reference, we include a synchronous Requests-based method.
