@@ -30,7 +30,7 @@ async def check_urls(
     recurse: bool = False,
     ssl_verify: bool = True,
     exclude_domains: list[str] | None = None,
-) -> list[tuple[Path, str, T.Any]]:
+) -> tuple[list[tuple[Path, str, T.Any]], dict[str, int]]:
 
     glob = re.compile(regex)
 
@@ -41,7 +41,7 @@ async def check_urls(
 
     warnings.simplefilter("ignore")
 
-    urls = await asyncio.gather(*tasks)
+    results = await asyncio.gather(*tasks)
 
     warnings.resetwarnings()
 
@@ -49,7 +49,16 @@ async def check_urls(
     # the event loop, do a 250ms sleep (not for each site)
     await asyncio.sleep(0.250)
 
-    return list(itertools.chain(*urls))  # flatten list of lists
+    # Separate bad links and statistics
+    all_bad = []
+    total_stats = {"remote_checked": 0, "remote_excluded": 0}
+    
+    for bad_links, stats in results:
+        all_bad.extend(bad_links)
+        total_stats["remote_checked"] += stats["remote_checked"]
+        total_stats["remote_excluded"] += stats["remote_excluded"]
+
+    return all_bad, total_stats
 
 
 async def check_url(
@@ -61,11 +70,17 @@ async def check_url(
     method: str = "get",
     ssl_verify: bool = True,
     exclude_domains: list[str] | None = None,
-) -> list[tuple[Path, str, T.Any]]:
+) -> tuple[list[tuple[Path, str, T.Any]], dict[str, int]]:
 
     urls = glob.findall(fn.read_text(errors="ignore"))
     logging.debug(fn, " ".join(urls))
     bad: list[tuple[Path, str, T.Any]] = []
+
+    # Track statistics for this file
+    stats = {
+        "remote_checked": 0,
+        "remote_excluded": 0
+    }
 
     timeout = aiohttp.ClientTimeout(total=TIMEOUT)
 
@@ -79,9 +94,11 @@ async def check_url(
             for domain in exclude_domains:
                 if domain.lower() in url.lower():
                     should_skip = True
+                    stats["remote_excluded"] += 1
                     break
             if should_skip:
                 continue
+        stats["remote_checked"] += 1
         try:
             # anti-crawling behavior doesn't like .head() method--.get() is slower but avoids lots of false positives
             async with aiohttp.ClientSession(
@@ -110,4 +127,4 @@ async def check_url(
         else:
             logging.info(f"OK: {url:80s}")
 
-    return bad
+    return bad, stats

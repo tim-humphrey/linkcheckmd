@@ -47,7 +47,7 @@ def main():
         logging.basicConfig(level=logging.INFO)
 
     tic = time.monotonic()
-    bad = check_links(
+    bad, stats = check_links(
         P.path,
         ext=P.ext,
         domain=P.domain,
@@ -60,12 +60,35 @@ def main():
         exclude_domains=P.exclude,
     )
 
-    print(f"{time.monotonic() - tic:0.3} seconds to check links")
-
+    elapsed_time = time.monotonic() - tic
+    
+    # Calculate totals
+    total_checked = stats["local_checked"] + stats["remote_checked"]
+    
+    # ASCII Report
+    print("\n" + "=" * 50)
+    print("          LINKCHECK SUMMARY REPORT")
+    print("=" * 50)
+    print(f"Local links checked:      {stats['local_checked']:>8}")
+    print(f"Remote links checked:     {stats['remote_checked']:>8}")
+    if P.exclude and stats["remote_excluded"] > 0:
+        print(f"Remote links excluded:    {stats['remote_excluded']:>8}")
+    print("-" * 50)
+    print(f"Total links checked:      {total_checked:>8}")
+    print("-" * 50)
+    print(f"Time elapsed:           {elapsed_time:>8.3f}s")
+    
     if bad:
+        print(f"Status:               {'FAILED':>8}")
+        print(f"Broken links found:     {len(bad):>8}")
+        print("=" * 50)
         # using 22 following cURL
         # https://everything.curl.dev/usingcurl/returns
         raise SystemExit(22)
+    else:
+        print(f"Status:             {'SUCCESS':>8}")
+        print("All links are valid! ✓")
+        print("=" * 50)
 
 
 if __name__ == "__main__":

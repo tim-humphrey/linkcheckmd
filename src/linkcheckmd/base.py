@@ -8,6 +8,13 @@ import asyncio
 from .coro import check_urls
 from . import files
 
+# Global statistics tracking
+_stats = {
+    "local_checked": 0,
+    "remote_checked": 0,
+    "remote_excluded": 0
+}
+
 # http://www.useragentstring.com
 USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:64.0) Gecko/20100101 Firefox/64.0"
 
@@ -24,18 +31,22 @@ def check_links(
     recurse: bool = False,
     ssl_verify: bool = True,
     exclude_domains: list[str] | None = None,
-) -> T.Iterable[tuple] | None:
+) -> tuple[T.Iterable[tuple] | None, dict[str, int]]:
 
     if local and recurse:
         logging.error("'recurse' currently works only for remote links.")
 
+    # Count local links
+    local_count = 0
     for mf, mu in check_local(path, ext=ext):
         # to get an iterable/list of these, call check_local directly from your program
         print(mf, mu)
+        local_count += 1
 
     bad = None
+    remote_count = 0
     if not local:
-        bad = check_remotes(
+        bad, remote_count = check_remotes(
             path,
             domain,
             ext=ext,
@@ -47,7 +58,13 @@ def check_links(
             exclude_domains=exclude_domains,
         )
 
-    return bad
+    stats = {
+        "local_checked": local_count,
+        "remote_checked": remote_count,
+        "remote_excluded": 0
+    }
+
+    return bad, stats
 
 
 def check_local(path: Path, ext: str) -> T.Iterable[tuple[Path, str]]:
@@ -114,7 +131,7 @@ def check_remotes(
 
     # %% session
     if use_async:
-        urls = asyncio.run(
+        urls, remote_stats = asyncio.run(
             check_urls(
                 path,
                 regex=pat,
@@ -129,8 +146,13 @@ def check_remotes(
     else:
         from .sync import check_urls as sync_urls
 
-        urls = sync_urls(
+        urls, remote_stats = sync_urls(
             path, regex=pat, ext=ext, hdr=hdr, recurse=recurse, ssl_verify=ssl_verify, exclude_domains=exclude_domains
         )
+
+    # Update global statistics
+    global _stats
+    _stats["remote_checked"] = remote_stats["remote_checked"]
+    _stats["remote_excluded"] = remote_stats["remote_excluded"]
 
     return urls

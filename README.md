@@ -14,6 +14,7 @@ A blazing-fast Python tool for checking links in Markdown files. Capable of proc
 - ⚡ **Ultra-fast**: Asynchronous processing with configurable concurrency
 - 🔗 **Comprehensive**: Checks both local and remote links
 - 🎯 **Selective**: Filter by domain or exclude specific domains *(NEW in this fork)*
+- 📈 **Statistics Report**: ASCII summary with comprehensive link statistics *(NEW in this fork)*
 - 🛡️ **Robust**: Handles SSL verification, custom headers, and retry logic
 - 📊 **Detailed**: Verbose output with timing information
 - 🚀 **CI-ready**: Perfect for continuous integration pipelines
@@ -21,15 +22,20 @@ A blazing-fast Python tool for checking links in Markdown files. Capable of proc
 
 ## Installation
 
-### Latest Release (PyPI)
+### This Fork (with Domain Exclusion)
+```bash
+pip install git+https://github.com/tim-humphrey/linkcheckmd.git
+```
+
+### Original Release (PyPI)
 ```bash
 pip install linkcheckmd
 ```
 
 ### Development Version
 ```bash
-git clone https://github.com/scivision/linkchecker-markdown
-pip install -e ./linkchecker-markdown
+git clone https://github.com/tim-humphrey/linkcheckmd.git
+pip install -e ./linkcheckmd
 ```
 
 ## Quick Start
@@ -187,8 +193,9 @@ python -m linkcheckmd -e example.com ./docs
 check-links:
   stage: test
   script:
-    - pip install linkcheckmd
-    - python -m linkcheckmd -r ./docs -e hashicorp.com -e terraform.io
+    - pip install --upgrade pip
+    - pip install git+https://github.com/tim-humphrey/linkcheckmd.git
+    - python -m linkcheckmd -r ./docs -e terraform.io -e hashicorp.com
   rules:
     - if: $CI_MERGE_REQUEST_IID
 ```
@@ -197,7 +204,7 @@ check-links:
 ```yaml
 - name: Check Links
   run: |
-    pip install linkcheckmd
+    pip install git+https://github.com/tim-humphrey/linkcheckmd.git
     python -m linkcheckmd -r ./docs -e internal.company.com -e staging.example.org
 ```
 
@@ -205,7 +212,7 @@ check-links:
 ```groovy
 stage('Link Check') {
     steps {
-        sh 'pip install linkcheckmd'
+        sh 'pip install git+https://github.com/tim-humphrey/linkcheckmd.git'
         sh 'python -m linkcheckmd -r ./docs -e dev.example.com'
     }
 }
@@ -304,7 +311,25 @@ This makes it perfect for CI/CD pipelines where you want builds to fail on broke
 ### Output Format
 - **stdout**: Broken links (for easy parsing)
 - **stderr**: Debug information and warnings
-- **Timing**: Execution time printed at completion
+- **Statistics Report**: Comprehensive ASCII summary at completion
+
+#### Example Statistics Output
+
+```
+==================================================
+          LINKCHECK SUMMARY REPORT
+==================================================
+Local links checked:             12
+Remote links checked:            45
+Remote links excluded:            8
+--------------------------------------------------
+Total links checked:             57
+--------------------------------------------------
+Time elapsed:               2.847s
+Status:               SUCCESS
+All links are valid! ✓
+==================================================
+```
 
 ## Common Use Cases
 
