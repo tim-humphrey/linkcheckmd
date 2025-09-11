@@ -82,6 +82,7 @@ async def check_url(
     for url in urls:
         if ext == ".md":
             url = url[1:-1]
+        stats["remote_checked"] += 1
         try:
             # anti-crawling behavior doesn't like .head() method--.get() is slower but avoids lots of false positives
             async with aiohttp.ClientSession(
